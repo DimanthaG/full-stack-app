@@ -2,15 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-  padding: 0;
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background-color: #f9fafb;
-  color: #111827;
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
 }
