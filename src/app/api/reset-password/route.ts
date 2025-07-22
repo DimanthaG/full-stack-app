@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const resetToken = generateResetToken();
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-    const user = await db.collection("users").findOneAndUpdate(
+    const result = await db.collection("users").findOneAndUpdate(
       { email },
       {
         $set: {
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       { returnDocument: "after" }
     );
 
-    if (!user.value) {
+    if (!result?.value) {
       return NextResponse.json(
         { error: "No user found with this email" },
         { status: 404 }

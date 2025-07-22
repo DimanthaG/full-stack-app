@@ -37,22 +37,49 @@ export async function POST(req: Request) {
       email: email.toLowerCase() 
     });
     
+    // Hash password
+    const hashedPassword = await hash(password, 12);
+
     if (existing) {
+      // If user exists but only has Google auth (no password)
+      if (existing.googleId && !existing.password) {
+        // Update the existing user to add password authentication
+        await db.collection("users").updateOne(
+          { email: email.toLowerCase() },
+          { 
+            $set: { 
+              password: hashedPassword,
+              updatedAt: new Date()
+            },
+            $addToSet: { 
+              providers: "credentials" 
+            }
+          }
+        );
+
+        return NextResponse.json({
+          success: true,
+          userId: existing._id,
+          merged: true
+        });
+      }
+
+      // If user already has password auth, return error
       return NextResponse.json(
         { error: "Email already exists" },
         { status: 409 }
       );
     }
 
-    // Hash password and create user
-    const hashedPassword = await hash(password, 12);
+    // Create new user if no existing account found
     const result = await db.collection("users").insertOne({
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
       role: "user",
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      providers: ["credentials"]
     });
 
     return NextResponse.json({

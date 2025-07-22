@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { options } from "@/app/api/auth/options";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
@@ -7,7 +7,7 @@ import { logAuditEvent } from "@/lib/audit";
 import { sendSecurityNotification } from "@/lib/notifications";
 
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(options);
 
   // Check if user is admin
   if (!session || session.user?.role !== "admin") {
