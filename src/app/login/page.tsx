@@ -1,18 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { FaGoogle, FaEnvelope, FaLock } from 'react-icons/fa';
+import PageTransition from '@/components/PageTransition';
 import { motion } from 'framer-motion';
-import { FaChartLine } from 'react-icons/fa';
 
-export default function LoginPage() {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
+
+  if (session) {
+    router.push('/');
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,117 +29,124 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false
+        redirect: false,
       });
 
       if (result?.error) {
-        setError('Invalid credentials');
+        setError('Invalid email or password');
       } else {
-        router.push('/stock-prediction');
+        router.push('/');
       }
-    } catch (err) {
+    } catch (error) {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md w-full space-y-8 bg-[#2A3B4C]/80 backdrop-blur-sm p-8 rounded-xl shadow-lg border border-[#4A5B6C]/30"
-      >
-        <div>
-          <div className="flex justify-center">
-            <FaChartLine className="h-12 w-12 text-[#8A9B9C]" />
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Sign in to StockUP
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
-            Or{' '}
-            <Link
-              href="/register"
-              className="font-medium text-[#8A9B9C] hover:text-[#6A7B8C]"
-            >
-              create a new account
-            </Link>
-          </p>
-        </div>
+  const handleGoogleSignIn = () => {
+    signIn('google', { callbackUrl: '/' });
+  };
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-[#4A5B6C] placeholder-gray-400 text-white bg-[#2A3B4C]/50 rounded-t-md focus:outline-none focus:ring-[#6A7B8C] focus:border-[#6A7B8C] focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-[#4A5B6C] placeholder-gray-400 text-white bg-[#2A3B4C]/50 rounded-b-md focus:outline-none focus:ring-[#6A7B8C] focus:border-[#6A7B8C] focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+  return (
+    <PageTransition>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-[#2A3B4C]/80 backdrop-blur-sm p-8 rounded-xl shadow-lg border border-[#4A5B6C]/30 w-full max-w-md"
+        >
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+            <p className="text-gray-300">Sign in to your StockUP account</p>
           </div>
 
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-red-400 text-sm text-center"
+              className="bg-red-500/20 border border-red-500/30 text-red-400 p-4 rounded-lg mb-6"
             >
               {error}
             </motion.div>
           )}
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link
-                href="/reset-password"
-                className="font-medium text-[#8A9B9C] hover:text-[#6A7B8C]"
-              >
-                Forgot your password?
-              </Link>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
+                Email
+              </label>
+              <div className="relative">
+                <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-[#4A5B6C]/50 border border-[#6A7B8C]/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-[#8A9B9C]"
+                  placeholder="Enter your email"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-4 py-3 bg-[#4A5B6C]/50 border border-[#6A7B8C]/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-[#8A9B9C]"
+                  placeholder="Enter your password"
+                />
+              </div>
+            </div>
+
+            <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#4A5B6C] hover:bg-[#6A7B8C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6A7B8C] disabled:opacity-50 transition-colors"
+              className="w-full bg-[#4A5B6C] hover:bg-[#6A7B8C] disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </motion.button>
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#6A7B8C]/30" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-[#2A3B4C]/80 text-gray-300">Or continue with</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGoogleSignIn}
+              className="mt-4 w-full bg-white hover:bg-gray-50 text-gray-900 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <FaGoogle className="w-4 h-4" />
+              Sign in with Google
+            </button>
           </div>
-        </form>
-      </motion.div>
-    </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-300">
+              Don't have an account?{' '}
+              <a href="/register" className="text-[#8A9B9C] hover:text-white transition-colors">
+                Sign up
+              </a>
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    </PageTransition>
   );
 } 
