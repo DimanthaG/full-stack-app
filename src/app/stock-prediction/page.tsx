@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { prepareTrainingData, trainNetwork, predictNextDays } from '@/lib/stockPredictor';
 import StockChart from '@/components/StockChart';
-import { getHistoricalData, searchSymbol, formatDate } from '@/lib/stockService';
+import { getHistoricalData, searchSymbol, formatDate, testApiKeys, verifyApiKeys } from '@/lib/stockService';
 import PageTransition from '@/components/PageTransition';
 import { motion } from 'framer-motion';
 import { FaUpload, FaSearch, FaBrain } from 'react-icons/fa';
@@ -28,12 +28,45 @@ export default function StockPredictionPage() {
   const [daysToPredict, setDaysToPredict] = useState(7);
   const [dataSource, setDataSource] = useState<'api' | 'file'>('api');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isTestingApi, setIsTestingApi] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  // Cleanup search timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
+  const handleTestApiKeys = async () => {
+    setIsTestingApi(true);
+    try {
+      const result = await verifyApiKeys();
+      console.log('🧪 API Test Results:', result);
+      
+      if (result.finnhub.working || result.alphaVantage.working) {
+        alert('✅ API keys are working! Try loading stock data now.');
+      } else {
+        const finnhubStatus = result.finnhub.available ? (result.finnhub.working ? 'working' : `failed: ${result.finnhub.error}`) : 'not configured';
+        const alphaVantageStatus = result.alphaVantage.available ? (result.alphaVantage.working ? 'working' : `failed: ${result.alphaVantage.error}`) : 'not configured';
+        
+        alert(`❌ API Test Results:\n\nFinnhub: ${finnhubStatus}\nAlpha Vantage: ${alphaVantageStatus}\n\nPlease check your API keys.`);
+      }
+    } catch (error) {
+      console.error('API test error:', error);
+      alert('❌ Error testing API keys. Check console for details.');
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
 
   if (status === 'loading') {
     return (
@@ -52,23 +85,34 @@ export default function StockPredictionPage() {
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
 
-    try {
-      const results = await searchSymbol(searchTerm);
-      console.log('Search results received:', results);
-      console.log('Results array:', results.result);
-      setSearchResults(results.result || []);
-    } catch (error) {
-      console.error('Search error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error searching for stocks.';
-      
-      if (errorMessage.includes('API key not configured')) {
-        alert('❌ API Key Not Configured!\n\n📝 To get real stock data:\n1. Go to https://finnhub.io/\n2. Sign up for a free account\n3. Get your API key\n4. Create .env.local file\n5. Add: NEXT_PUBLIC_FINNHUB_API_KEY=your_key\n6. Restart the server');
-      } else if (errorMessage.includes('rate limit')) {
-        alert('⚠️ Rate limit exceeded. Please wait a moment and try again.');
-      } else {
-        alert(`Error searching for stocks: ${errorMessage}`);
-      }
+    // Clear any existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
     }
+
+    // Set a new timeout to debounce the search
+    const timeout = setTimeout(async () => {
+      try {
+        console.log('🔍 Debounced search for:', searchTerm);
+        const results = await searchSymbol(searchTerm);
+        console.log('Search results received:', results);
+        console.log('Results array:', results.result);
+        setSearchResults(results.result || []);
+      } catch (error) {
+        console.error('Search error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Error searching for stocks.';
+        
+        if (errorMessage.includes('API key not configured')) {
+          alert('❌ API Key Not Configured!\n\n📝 To get real stock data:\n1. Go to https://finnhub.io/\n2. Sign up for a free account\n3. Get your API key\n4. Create .env.local file\n5. Add: NEXT_PUBLIC_FINNHUB_API_KEY=your_key\n6. Restart the server');
+        } else if (errorMessage.includes('rate limit')) {
+          alert('⚠️ Rate limit exceeded. Please wait a moment and try again.');
+        } else {
+          alert(`Error searching for stocks: ${errorMessage}`);
+        }
+      }
+    }, 1000); // 1 second debounce
+
+    setSearchTimeout(timeout);
   };
 
   const handleSymbolSelect = async (symbol: string) => {
@@ -225,60 +269,86 @@ export default function StockPredictionPage() {
         >
           <h2 className="text-xl font-semibold mb-4 text-white">Data Input</h2>
 
-          <div className="mb-6">
-            <div className="flex gap-4 mb-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="api"
-                  checked={dataSource === 'api'}
-                  onChange={(e) => setDataSource(e.target.value as 'api' | 'file')}
-                  className="mr-2"
-                />
-                <span className="text-white">Use API</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="file"
-                  checked={dataSource === 'file'}
-                  onChange={(e) => setDataSource(e.target.value as 'api' | 'file')}
-                  className="mr-2"
-                />
-                <span className="text-white">Upload File</span>
-              </label>
-            </div>
-
-            {dataSource === 'api' ? (
+          <div className="space-y-4">
               <div>
-                <div className="flex gap-2 mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search for a stock symbol (e.g., AAPL, MSFT)"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-[#4A5B6C]/50 border border-[#6A7B8C]/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-[#8A9B9C]"
-                  />
-                  <button
-                    onClick={handleSearch}
-                    className="px-4 py-2 bg-[#4A5B6C] hover:bg-[#6A7B8C] text-white rounded-lg transition-colors"
-                  >
-                    <FaSearch className="w-4 h-4" />
-                  </button>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Data Source
+                </label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="api"
+                      checked={dataSource === 'api'}
+                      onChange={(e) => setDataSource(e.target.value as 'api' | 'file')}
+                      className="mr-2"
+                    />
+                    <span className="text-white">Use API</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="file"
+                      checked={dataSource === 'file'}
+                      onChange={(e) => setDataSource(e.target.value as 'api' | 'file')}
+                      className="mr-2"
+                    />
+                    <span className="text-white">Upload File</span>
+                  </label>
                 </div>
+              </div>
+
+              {dataSource === 'api' && (
+                <div>
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Stock Symbol
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Enter stock symbol (e.g., AAPL)"
+                        className="flex-1 bg-[#2A3B4C]/20 backdrop-blur-sm border border-[#4A5B6C]/30 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6A7B8C]"
+                      />
+                      <button
+                        onClick={handleSearch}
+                        className="bg-[#6A7B8C] hover:bg-[#8A9B9C] text-white px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Search
+                      </button>
+                      <button
+                        onClick={handleTestApiKeys}
+                        disabled={isTestingApi}
+                        className="bg-[#4A5B6C] hover:bg-[#6A7B8C] text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {isTestingApi ? 'Testing...' : 'Test APIs'}
+                      </button>
+                    </div>
+                  </div>
 
                 {searchResults.length > 0 && (
-                  <div className="bg-[#4A5B6C]/30 rounded-lg p-4 max-h-40 overflow-y-auto">
-                    {searchResults.map((result, index) => (
-                      <div
-                        key={result.symbol || result.displaySymbol || index}
-                        onClick={() => handleSymbolSelect(result.symbol || result.displaySymbol || '')}
-                        className="flex justify-between items-center p-2 hover:bg-[#6A7B8C]/30 rounded cursor-pointer text-white"
-                      >
-                        <span className="font-medium">{result.symbol || result.displaySymbol}</span>
-                        <span className="text-gray-300">{result.description}</span>
-                      </div>
-                    ))}
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Search Results (showing top 3):
+                    </h3>
+                    <div className="space-y-2">
+                      {searchResults.map((result) => (
+                        <div
+                          key={result.symbol || result.displaySymbol}
+                          onClick={() => handleSymbolSelect(result.symbol || result.displaySymbol)}
+                          className="bg-[#2A3B4C]/20 backdrop-blur-sm border border-[#4A5B6C]/30 rounded-lg p-3 cursor-pointer hover:bg-[#2A3B4C]/40 transition-colors"
+                        >
+                          <div className="font-semibold text-white">
+                            {result.symbol || result.displaySymbol}
+                          </div>
+                          <div className="text-gray-300 text-sm">
+                            {result.description || result.displaySymbol}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -290,7 +360,9 @@ export default function StockPredictionPage() {
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+
+            {dataSource === 'file' && (
               <div>
                 <input
                   type="file"
