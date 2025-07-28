@@ -3,7 +3,7 @@ import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FaUsers, FaClipboardList, FaChartLine, FaCog } from 'react-icons/fa';
-import PageTransition from '@/components/PageTransition';
+import PageTransition from '../../components/PageTransition';
 import { useState, useEffect } from "react";
 
 interface AdminStats {

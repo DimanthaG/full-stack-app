@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { FaChartLine, FaBrain, FaShieldAlt, FaRocket } from 'react-icons/fa';
-import PageTransition from '@/components/PageTransition';
+import PageTransition from '../../components/PageTransition';
 
 export default function About() {
   const features = [

@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import ConfirmModal from "@/components/ConfirmModal";
 import { motion } from "framer-motion";
 import { FaUsers, FaSearch, FaFilter, FaEye, FaEdit } from "react-icons/fa";
+import GradientBackground from "@/components/GradientBackground";
 import PageTransition from "@/components/PageTransition";
 
 interface User {
@@ -105,6 +106,7 @@ export default function AdminUsersPage() {
   return (
     <PageTransition>
       <>
+        <GradientBackground />
         <div className="min-h-screen p-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
