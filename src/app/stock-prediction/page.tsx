@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { prepareTrainingData, trainNetwork, predictNextDays } from '@/lib/stockPredictor';
+import { prepareTrainingData, trainNetwork, predictNextDays } from '@/lib/simplePredictor';
 import StockChart from '@/components/StockChart';
 import { getHistoricalData, searchSymbol, formatDate, testApiKeys, verifyApiKeys } from '@/lib/stockService';
 import PageTransition from '@/components/PageTransition';
