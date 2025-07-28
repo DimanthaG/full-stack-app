@@ -1,5 +1,5 @@
 {
-  "name": "full-stack-app",
+  "name": "stock-up",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,13 +10,20 @@
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/chart.js": "^2.9.41",
     "bcryptjs": "^2.4.3",
+    "brain.js": "^2.0.0-beta.23",
+    "chart.js": "^4.4.1",
     "dotenv": "^16.3.1",
+    "finnhub": "^1.2.18",
+    "framer-motion": "^11.18.2",
     "mongodb": "^6.3.0",
     "next": "14.0.4",
     "next-auth": "^4.24.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",

@@ -1,15 +1,16 @@
-<<<<<<< HEAD
-import NextAuth from "next-auth";
-import { options } from "@/app/api/auth/options";
-
-const handler = NextAuth(options);
-=======
 import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+
+if (!process.env.NEXTAUTH_URL) {
+  console.warn("Warning: NEXTAUTH_URL is not set. This might cause session issues in production.");
+}
+
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error("Error: NEXTAUTH_SECRET is not set");
+}
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -29,6 +30,12 @@ export const authOptions: AuthOptions = {
         const user = await db.collection("users").findOne({ email: credentials.email });
         
         if (!user) throw new Error("User not found");
+        
+        // If user has googleId but no password (OAuth-only user)
+        if (user.googleId && !user.password) {
+          throw new Error("Please sign in with Google");
+        }
+        
         const isValid = await compare(credentials.password, user.password);
         if (!isValid) throw new Error("Invalid password");
         
@@ -62,41 +69,44 @@ export const authOptions: AuthOptions = {
               name: user.name,
               role: "user",
               createdAt: new Date(),
-              googleId: (profile as any).sub, // Type assertion for profile.sub
-              image: user.image
+              googleId: (profile as any).sub,
+              image: user.image,
+              providers: ["google"]
             });
             
-            // Update user object with database ID and role
             user.id = result.insertedId.toString();
             user.role = "user";
           } else {
-            // Update existing user with Google info if needed
+            // Update existing user with Google info
             await db.collection("users").updateOne(
               { email: user.email },
               {
                 $set: {
-                  googleId: (profile as any).sub, // Type assertion for profile.sub
-                  image: user.image,
-                  name: user.name
-                }
+                  googleId: (profile as any).sub,
+                  image: user.image || existingUser.image,
+                  name: user.name || existingUser.name
+                },
+                $addToSet: { providers: "google" }
               }
             );
             
-            // Set user ID and role from existing user
             user.id = existingUser._id.toString();
             user.role = existingUser.role || "user";
           }
         } catch (error) {
-          console.error("Error saving Google user:", error);
+          console.error("Error handling Google sign in:", error);
           return false;
         }
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.role = user.role || "user";
+        if (account) {
+          token.provider = account.provider;
+        }
       }
       return token;
     },
@@ -110,19 +120,18 @@ export const authOptions: AuthOptions = {
       return session;
     }
   },
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,  // 30 days
-    updateAge: 24 * 60 * 60,    // Refresh session every 24 hours
-  },
   pages: {
     signIn: "/login",
     error: "/auth/error",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60,   // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
 
->>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
 export { handler as GET, handler as POST }; 
