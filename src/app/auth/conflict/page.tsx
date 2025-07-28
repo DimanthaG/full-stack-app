@@ -1,8 +1,9 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { Suspense } from "react";
 
-export default function ConflictResolutionPage() {
+function ConflictResolutionContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
   const provider = searchParams.get("provider");
@@ -43,5 +44,13 @@ export default function ConflictResolutionPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function ConflictResolutionPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConflictResolutionContent />
+    </Suspense>
   );
 } 
