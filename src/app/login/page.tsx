@@ -1,12 +1,18 @@
 "use client";
+<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+=======
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+>>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+<<<<<<< HEAD
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -22,11 +28,18 @@ export default function LoginPage() {
       setSuccess("Account linked successfully! You can now sign in with either email/password or Google.");
     }
   }, [searchParams]);
+=======
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+>>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+<<<<<<< HEAD
     setSuccess("");
+=======
+>>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
     setLoading(true);
 
     try {
@@ -37,11 +50,15 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
+<<<<<<< HEAD
         if (res.error === "Please sign in with Google") {
           setError("This email is registered with Google. Please use the Google sign-in button below.");
         } else {
           setError("Invalid email or password");
         }
+=======
+        setError("Invalid email or password");
+>>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
       } else {
         router.push("/dashboard");
       }
@@ -55,6 +72,7 @@ export default function LoginPage() {
   return (
     <main className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded">
       <h1 className="text-2xl font-semibold mb-4">Login</h1>
+<<<<<<< HEAD
       
       {success && (
         <div className="mb-4 bg-green-50 border border-green-200 text-green-600 rounded-md p-3">
@@ -62,6 +80,8 @@ export default function LoginPage() {
         </div>
       )}
 
+=======
+>>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -70,7 +90,11 @@ export default function LoginPage() {
           <input
             id="email"
             type="email"
+<<<<<<< HEAD
             placeholder="Enter your email"
+=======
+            placeholder="Enter your email address"
+>>>>>>> fb06a72da8b32eb9f1be117f1eff65c957368f5b
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             required
