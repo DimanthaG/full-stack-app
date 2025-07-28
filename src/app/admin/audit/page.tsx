@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaClipboardList, FaSearch, FaFilter, FaCalendar, FaUser, FaEye } from "react-icons/fa";
-import GradientBackground from "@/components/GradientBackground";
 import PageTransition from "@/components/PageTransition";
 
 interface AuditEntry {
@@ -99,7 +98,6 @@ export default function AuditLogPage() {
   return (
     <PageTransition>
       <>
-        <GradientBackground />
         <div className="min-h-screen p-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
